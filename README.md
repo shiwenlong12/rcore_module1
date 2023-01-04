@@ -1,2 +1,2 @@
 # rcore_module
-rcore模块化改进
+毕业设计的代码实现及其相关文档
