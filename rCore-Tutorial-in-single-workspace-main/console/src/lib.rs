@@ -127,3 +127,4 @@ impl log::Log for Logger {
 
     fn flush(&self) {}
 }
+
