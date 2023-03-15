@@ -59,3 +59,4 @@ impl MonoForeignPortal for MultislotPortal {
         sizeof!(Self) + self.text_size + key * sizeof!(PortalCache)
     }
 }
+

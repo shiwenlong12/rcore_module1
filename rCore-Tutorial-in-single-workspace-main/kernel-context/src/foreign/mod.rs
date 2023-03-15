@@ -253,3 +253,4 @@ unsafe extern "C" fn foreign_execute(ctx: *mut PortalCache) {
         options(noreturn)
     )
 }
+

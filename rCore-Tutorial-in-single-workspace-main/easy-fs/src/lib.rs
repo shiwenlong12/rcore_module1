@@ -18,3 +18,13 @@ pub use efs::EasyFileSystem;
 pub use file::*;
 use layout::*;
 pub use vfs::Inode;
+
+
+# [cfg(test)]
+mod tests{
+
+    #[test]
+    fn test_() {
+        
+    }
+}

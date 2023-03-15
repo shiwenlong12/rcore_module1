@@ -257,3 +257,74 @@ impl Iterator for KernelRegionIterator<'_> {
         }
     }
 }
+
+
+
+# [cfg(test)]
+mod tests{
+    use crate::KernelLayout;
+    //use crate::KernelRegion;
+    use crate::KernelRegionIterator;
+
+    #[test]
+    fn test_kernel_layout() {
+        let _a = KernelLayout {
+            text: usize::MAX,
+            rodata: usize::MAX,
+            data: usize::MAX,
+            sbss: usize::MAX,
+            ebss: usize::MAX,
+            boot: usize::MAX,
+            end: usize::MAX,
+        };
+        //测试内核起始地址，结尾地址，静态二进制长度。
+        assert_eq!(usize::MAX,_a.start());
+        assert_eq!(usize::MAX,_a.end());
+        assert_eq!(usize::MAX,_a.sbss);
+        assert_eq!(usize::MAX,_a.ebss);
+        assert_eq!(0,_a.len());
+        //_a.zero_bss();
+        _a.iter();
+
+
+    }
+
+    //测试内核内存分区
+    #[test]
+    fn test_kernel_region() {
+        //KernelRegion::fmt();
+    }
+
+    //测试内核内存分区迭代器
+    #[test]
+    fn test_kernel_region_iterator() {
+        let _a = KernelLayout {
+            text: usize::MAX,
+            rodata: usize::MAX,
+            data: usize::MAX,
+            sbss: usize::MAX,
+            ebss: usize::MAX,
+            boot: usize::MAX,
+            end: usize::MAX,
+        };
+        KernelRegion{
+
+        };
+
+        let _b = KernelRegionIterator{
+            KernelLayout {
+                text: usize::MAX,
+                rodata: usize::MAX,
+                data: usize::MAX,
+                sbss: usize::MAX,
+                ebss: usize::MAX,
+                boot: usize::MAX,
+                end: usize::MAX,
+            },
+            Some(KernelRegionTitle::Text),
+        };
+
+        KernelRegionIterator::next(&mut _b);
+    }
+    
+}

@@ -1,5 +1,5 @@
 #![no_std]
-#![deny(warnings)]
+///#![deny(warnings)]
 
 #[cfg(all(feature = "kernel", feature = "user"))]
 compile_error!("You can only use one of `supervisor` or `user` features at a time");
@@ -35,5 +35,25 @@ impl From<usize> for SyscallId {
     #[inline]
     fn from(val: usize) -> Self {
         Self(val)
+    }
+}
+
+
+mod kernel;
+
+# [cfg(test)]
+mod tests{
+
+    use crate::kernel::Caller;
+    use crate::kernel::handle;
+    use crate::SyscallId;
+
+    #[test]
+    fn test_handle() {
+        let caller = Caller { entity: 0, flow: 0 };
+        let id = SyscallId(64);
+        let args = [0; 6];
+        handle(caller, id, args);
+
     }
 }

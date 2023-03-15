@@ -29,7 +29,8 @@ pub fn init(base_address: usize) {
 ///
 /// # Safety
 ///
-/// `region` 内存块的所有权将转移到分配器，因此需要调用者确保这个内存块与已经转移到分配器的内存块都不重叠，且未被其他对象引用。
+/// `region` 内存块的所有权将转移到分配器，
+/// 因此需要调用者确保这个内存块与已经转移到分配器的内存块都不重叠，且未被其他对象引用。
 /// 并且这个内存块必须位于初始化时传入的起始位置之后。
 #[inline]
 pub unsafe fn transfer(region: &'static mut [u8]) {
@@ -61,5 +62,30 @@ unsafe impl GlobalAlloc for Global {
     #[inline]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         HEAP.deallocate_layout(NonNull::new(ptr).unwrap(), layout)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::init;
+    use crate::Global;
+    use crate::Layout;
+    use::core::ptr::Alignment;
+    use core::alloc::GlobalAlloc;
+
+    #[test]
+    fn test_alloc() {
+        init(8000_0000);
+        //我们的需求是分配一块连续的、大小至少为 size 字节的虚拟内存，且对齐要求为 align
+        let layout = Layout {
+            //size 表示要分配的字节数，
+            size: 512,
+            //align 则表示分配的虚拟地址的最小对齐要求，即分配的地址要求是 align 的倍数。
+            //这里的 align 必须是2的幂次。
+            align: Alignment(1),
+        };
+        let global = Global{};
+
+        let a = Global::alloc(&global,layout);
     }
 }

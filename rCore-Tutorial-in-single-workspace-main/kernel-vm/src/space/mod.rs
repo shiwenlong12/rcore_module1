@@ -1,4 +1,4 @@
-mod mapper;
+pub mod mapper;
 mod visitor;
 
 extern crate alloc;

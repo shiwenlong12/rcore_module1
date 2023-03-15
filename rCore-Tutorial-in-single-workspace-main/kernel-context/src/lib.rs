@@ -251,3 +251,89 @@ unsafe extern "C" fn execute_naked() {
         options(noreturn)
     )
 }
+
+mod foreign;
+# [cfg(test)]
+mod tests{
+    use crate::LocalContext;
+    //use crate::build_sstatus;
+    use crate::foreign::ForeignContext;
+    //use crate::foreign::MonoForeignPortal;
+
+    #[test]
+    fn test_context() {
+        //测试empty()函数
+        let mut _a = LocalContext::empty();
+        assert_eq!(false,_a.supervisor);
+        assert_eq!(false,_a.interrupt);
+        assert_eq!(0,_a.pc());
+        //测试user()函数,初始化指定入口的用户上下文。
+        _a = LocalContext::user(04);
+        assert_eq!(false,_a.supervisor);
+        assert_eq!(true,_a.interrupt);
+        assert_eq!(04,_a.pc());
+        //thread()函数,初始化指定入口的内核上下文。
+        _a = LocalContext::thread(04, false);
+        assert_eq!(true,_a.supervisor);
+        assert_eq!(false,_a.interrupt);
+        assert_eq!(04,_a.pc());
+        _a = LocalContext::thread(04, true);
+        assert_eq!(true,_a.supervisor);
+        assert_eq!(true,_a.interrupt);
+        assert_eq!(04,_a.pc());
+
+        //测试读取类函数
+        let _x =  _a.x(1);
+        assert_eq!(0,_a.x(1));
+        assert_eq!(0,_a.a(1));
+        assert_eq!(0,_a.ra());
+        assert_eq!(0,_a.sp());
+        assert_eq!(04,_a.pc());
+
+        //测试move_next,将 pc 移至下一条指令。
+        _a.move_next();
+        assert_eq!(08,_a.pc());
+
+        //测试修改类函数
+        let mut _b = LocalContext {
+            sctx: 0,
+            x: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
+            supervisor: false,
+            interrupt: false,
+            sepc: 0,
+        };
+        (&mut _b).x_mut(1);
+
+        assert_eq!(0,_b.x(1));
+        assert_eq!(0,*(&mut _b).x_mut(1));
+        assert_eq!(10,*(&mut _b).a_mut(1));
+        assert_eq!(1,*(&mut _b).sp_mut());
+        assert_eq!(0,*(&mut _b).pc_mut());
+
+    }
+
+    #[test]
+    fn test_build_sstatus() {
+        //build_sstatus(false,false);
+    }
+
+    #[test]
+    fn test_execute() {
+        let mut _a = LocalContext::empty();
+        let mut _b = ForeignContext {
+            /// 目标地址空间上的线程上下文。
+            context: _a,
+            /// 目标地址空间。
+            satp: 0,
+        };
+        
+        execute(&mut _b,);
+    }
+
+    #[test]
+    fn test_multislot_portal() {
+        //计算包括 `slots` 个插槽的传送门总长度。
+        //calculate_size(1);
+    }
+
+}

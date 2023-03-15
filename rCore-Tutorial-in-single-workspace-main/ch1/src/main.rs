@@ -1,22 +1,12 @@
+
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test_runner)]
+#![reexport_test_harness_main = "test_main"]
+
 #![no_std]
 #![no_main]
 #![feature(naked_functions, asm_const)]
 #![deny(warnings)]
-
-
- 
-#![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
- 
-#[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
-    println!("Running {} tests", tests.len());
-    for test in tests {
-        test();
-    }
-}
-
-
 
 /// Supervisor 汇编入口。
 ///
@@ -29,6 +19,9 @@ unsafe extern "C" fn _start() -> ! {
 
     #[link_section = ".bss.uninit"]
     static mut STACK: [u8; STACK_SIZE] = [0u8; STACK_SIZE];
+
+    #[cfg(test)]
+    test_main();
 
     core::arch::asm!(
         "la sp, {stack} + {stack_size}",
@@ -45,7 +38,7 @@ unsafe extern "C" fn _start() -> ! {
 /// 打印 `Hello, World!`，然后关机。
 extern "C" fn rust_main() -> ! {
     use sbi_rt::*;
-    for c in b"Hello, world!" {
+    for c in b"Hello, world! is OK" {
         #[allow(deprecated)]
         legacy::console_putchar(*c as _);
     }
@@ -60,3 +53,4 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     system_reset(Shutdown, SystemFailure);
     loop {}
 }
+

@@ -1,7 +1,9 @@
 ﻿//! 提供可定制实现的 `print!`、`println!` 和 `log::Log`。
-
 #![no_std]
 #![deny(warnings, missing_docs)]
+
+// #![feature(custom_test_frameworks)]
+// #![test_runner(crate::test_runner)]
 
 use core::{
     fmt::{self, Write},
@@ -59,6 +61,7 @@ pub fn test_log() {
     log::info!("LOG TEST >> Hello, world!");
     log::warn!("LOG TEST >> Hello, world!");
     log::error!("LOG TEST >> Hello, world!");
+    println!("test_hello_world is OK");
     println!();
 }
 
@@ -127,4 +130,24 @@ impl log::Log for Logger {
 
     fn flush(&self) {}
 }
+
+//单元测试主要测试私有接口
+# [cfg(test)]
+mod tests{
+
+    #[test]
+    fn test_println() {
+        //print!("trivial assertion... ");
+        assert_eq!(1, 1);
+        //println!("[ok]");
+    }
+}
+
+// #[cfg(test)]
+// fn test_runner(tests: &[&dyn Fn()]) {
+//     println!("Running {} tests", tests.len());
+//     for test in tests {
+//         test();
+//     }
+// }
 

@@ -40,6 +40,8 @@ extern "C" fn rust_main() -> ! {
     rcore_console::set_log_level(option_env!("LOG"));
     // 测试各种打印
     rcore_console::test_log();
+    rcore_console::print!("hell0 ");
+    rcore_console::println!("world");
 
     system_reset(Shutdown, NoReason);
     unreachable!()
@@ -65,3 +67,4 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     system_reset(Shutdown, SystemFailure);
     loop {}
 }
+

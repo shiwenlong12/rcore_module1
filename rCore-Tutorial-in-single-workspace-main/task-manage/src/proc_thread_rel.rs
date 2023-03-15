@@ -3,8 +3,8 @@ use alloc::vec::Vec;
 use super::id::{ProcId, ThreadId};
 
 /// 线程、进程之间的关系，通过进程的 Id 来查询这个关系
-#[cfg(feature = "thread")]
-#[doc(cfg(feature = "thread"))]
+//#[cfg(feature = "thread")]
+//#[doc(cfg(feature = "thread"))]
 pub struct ProcThreadRel {
     /// 父进程 Id
     pub parent: ProcId,
