@@ -2,7 +2,7 @@ use super::UPIntrFreeCell;
 use alloc::collections::VecDeque;
 use rcore_task_manage::ThreadId;
 
-/// Semaphore
+/// Semaphore信号
 pub struct Semaphore {
     /// UPIntrFreeCell<SemaphoreInner>
     pub inner: UPIntrFreeCell<SemaphoreInner>,

@@ -56,6 +56,7 @@ rCore-Tutorial-v3 的教材部分别出心裁地为每一章取了一种古生�
 ## 运行系统
 
 - `cargo qemu --ch <n>`
+  cargo qemu --ch 1
 
   在 qemu 运行第 `n` 章的操作系统。
 

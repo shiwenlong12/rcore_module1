@@ -39,7 +39,7 @@ impl From<usize> for SyscallId {
 }
 
 
-mod kernel;
+
 
 # [cfg(test)]
 mod tests{

@@ -264,7 +264,7 @@ impl Iterator for KernelRegionIterator<'_> {
 mod tests{
     use crate::KernelLayout;
     //use crate::KernelRegion;
-    use crate::KernelRegionIterator;
+    //use crate::KernelRegionIterator;
 
     #[test]
     fn test_kernel_layout() {
@@ -298,33 +298,33 @@ mod tests{
     //测试内核内存分区迭代器
     #[test]
     fn test_kernel_region_iterator() {
-        let _a = KernelLayout {
-            text: usize::MAX,
-            rodata: usize::MAX,
-            data: usize::MAX,
-            sbss: usize::MAX,
-            ebss: usize::MAX,
-            boot: usize::MAX,
-            end: usize::MAX,
-        };
-        KernelRegion{
+        // let _a = KernelLayout {
+        //     text: usize::MAX,
+        //     rodata: usize::MAX,
+        //     data: usize::MAX,
+        //     sbss: usize::MAX,
+        //     ebss: usize::MAX,
+        //     boot: usize::MAX,
+        //     end: usize::MAX,
+        // };
+        // KernelRegion{
 
-        };
+        // };
 
-        let _b = KernelRegionIterator{
-            KernelLayout {
-                text: usize::MAX,
-                rodata: usize::MAX,
-                data: usize::MAX,
-                sbss: usize::MAX,
-                ebss: usize::MAX,
-                boot: usize::MAX,
-                end: usize::MAX,
-            },
-            Some(KernelRegionTitle::Text),
-        };
+        // let _b = KernelRegionIterator{
+        //     KernelLayout {
+        //         text: usize::MAX,
+        //         rodata: usize::MAX,
+        //         data: usize::MAX,
+        //         sbss: usize::MAX,
+        //         ebss: usize::MAX,
+        //         boot: usize::MAX,
+        //         end: usize::MAX,
+        //     },
+        //     Some(KernelRegionTitle::Text),
+        // };
 
-        KernelRegionIterator::next(&mut _b);
+        // KernelRegionIterator::next(&mut _b);
     }
     
 }

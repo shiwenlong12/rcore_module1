@@ -2,7 +2,7 @@ use super::UPIntrFreeCell;
 use alloc::collections::VecDeque;
 use rcore_task_manage::ThreadId;
 
-/// Mutex trait
+/// Mutex trait互斥
 pub trait Mutex: Sync + Send {
     /// tid 表示的线程试图获取锁，并返回结果
     fn lock(&self, tid: ThreadId) -> bool;

@@ -2,7 +2,7 @@ use super::{Mutex, UPIntrFreeCell};
 use alloc::{collections::VecDeque, sync::Arc};
 use rcore_task_manage::ThreadId;
 
-/// Condvar
+/// Condvar条件变量
 pub struct Condvar {
     /// UPIntrFreeCell<CondvarInner>
     pub inner: UPIntrFreeCell<CondvarInner>,
@@ -20,7 +20,7 @@ impl Condvar {
         Self {
             inner: unsafe {
                 UPIntrFreeCell::new(CondvarInner {
-                    wait_queue: VecDeque::new(),
+                    wait_queue: VecDeque::new(),//双端队列的向量
                 })
             },
         }
@@ -29,6 +29,7 @@ impl Condvar {
     pub fn signal(&self) -> Option<ThreadId> {
         let mut inner = self.inner.exclusive_access();
         inner.wait_queue.pop_front()
+        
     }
 
     /*

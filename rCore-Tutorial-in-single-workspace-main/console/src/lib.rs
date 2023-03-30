@@ -134,20 +134,31 @@ impl log::Log for Logger {
 //单元测试主要测试私有接口
 # [cfg(test)]
 mod tests{
+    use crate::Console;
+    use crate::init_console;
+    use crate::test_log;
+    use crate::set_log_level;
+    struct Console1;
+
+    /// 为 `Console` 实现 `console::Console` trait。
+    impl Console for Console1 {
+        fn put_char(&self, _c: u8) {
+            //#[allow(deprecated)]
+            //legacy::console_putchar(c as _);
+        }
+    }
 
     #[test]
     fn test_println() {
+        init_console(&Console1);
+        (&Console1).put_char(0);
+        set_log_level(option_env!("LOG"));
+        // 测试各种打印
+        test_log();
+        print!("hell0 ");
         //print!("trivial assertion... ");
         assert_eq!(1, 1);
         //println!("[ok]");
     }
 }
-
-// #[cfg(test)]
-// fn test_runner(tests: &[&dyn Fn()]) {
-//     println!("Running {} tests", tests.len());
-//     for test in tests {
-//         test();
-//     }
-// }
 

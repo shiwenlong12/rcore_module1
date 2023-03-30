@@ -12,6 +12,7 @@ use default_action::DefaultAction;
 mod signal_set;
 use signal_set::SignalSet;
 
+
 /// 正在处理的信号
 pub enum HandlingSignal {
     Frozen,                   // 是内核信号，需要暂停当前进程
@@ -184,9 +185,20 @@ impl Signal for SignalImpl {
 
 # [cfg(test)]
 mod tests{
+    use crate::SignalImpl;
 
     #[test]
-    fn test_() {
+    fn test_signal_impl() {
+        SignalImpl::new();
+    }
+
+    #[test]
+    fn test_default_action() {
+        
+    }
+
+    #[test]
+    fn test_signal_set() {
         
     }
 }

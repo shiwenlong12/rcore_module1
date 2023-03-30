@@ -10,4 +10,4 @@ authors = ["YdrMaster <ydrml@hotmail.com>"]
 foreign = ["spin"]
 
 [dependencies]
-spin = { version = "0.9.4", optional = true }
+spin = { version = "0.9", optional = true }

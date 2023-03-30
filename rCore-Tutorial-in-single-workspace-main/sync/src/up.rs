@@ -33,7 +33,7 @@ impl<T> UPSafeCell<T> {
 }
 */
 
-/// interior mutability
+/// interior mutability内部可变性
 pub struct UPSafeCellRaw<T> {
     inner: UnsafeCell<T>,
 }
@@ -90,6 +90,7 @@ impl IntrMaskingInfo {
 }
 
 /// A mutable memory location with dynamically checked borrow rules
+//具有动态检查借用规则的可变内存位置
 pub struct UPIntrFreeCell<T> {
     /// inner data
     inner: RefCell<T>,
@@ -98,6 +99,7 @@ pub struct UPIntrFreeCell<T> {
 unsafe impl<T> Sync for UPIntrFreeCell<T> {}
 
 /// A wrapper type for a mutably borrowed value from a RefCell<T>
+// 从 RefCell<T> 可变借用值的包装器类型
 pub struct UPIntrRefMut<'a, T>(Option<RefMut<'a, T>>);
 
 impl<T> UPIntrFreeCell<T> {
