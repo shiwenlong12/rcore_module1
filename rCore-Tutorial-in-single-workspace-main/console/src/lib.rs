@@ -143,8 +143,8 @@ mod tests{
     /// 为 `Console` 实现 `console::Console` trait。
     impl Console for Console1 {
         fn put_char(&self, _c: u8) {
-            //#[allow(deprecated)]
-            //legacy::console_putchar(c as _);
+            #[allow(deprecated)]
+            legacy::console_putchar(c as _);
         }
     }
 

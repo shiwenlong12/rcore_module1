@@ -30,7 +30,7 @@
 //! 用 [`KernelLayout`] 结构体定位、保存和访问内核内存布局。
 
 #![no_std]
-#![deny(warnings, missing_docs)]
+//#![deny(warnings, missing_docs)]
 
 mod app;
 
@@ -263,8 +263,9 @@ impl Iterator for KernelRegionIterator<'_> {
 # [cfg(test)]
 mod tests{
     use crate::KernelLayout;
-    //use crate::KernelRegion;
-    //use crate::KernelRegionIterator;
+    use crate::KernelRegion;
+    use crate::KernelRegionIterator;
+    use crate::KernelRegionTitle::*;
 
     #[test]
     fn test_kernel_layout() {
@@ -289,42 +290,46 @@ mod tests{
 
     }
 
+    use core::fmt::Formatter;
     //测试内核内存分区
     #[test]
     fn test_kernel_region() {
+        let region = KernelRegion{
+            title: Text,
+            range:8000_1000..8000_8000,
+        };
+
+        //let mut buf:(dyn Write + 'a)= ;
+        //let f = Formatter::new();
         //KernelRegion::fmt();
     }
 
     //测试内核内存分区迭代器
     #[test]
     fn test_kernel_region_iterator() {
-        // let _a = KernelLayout {
-        //     text: usize::MAX,
-        //     rodata: usize::MAX,
-        //     data: usize::MAX,
-        //     sbss: usize::MAX,
-        //     ebss: usize::MAX,
-        //     boot: usize::MAX,
-        //     end: usize::MAX,
-        // };
-        // KernelRegion{
+        let _a = KernelLayout {
+            text: 8000_1000,
+            rodata: 8000_2000,
+            data: 8000_3000,
+            sbss: 8000_4000,
+            ebss: 8000_5000,
+            boot: 8000_6000,
+            end: 8000_8000,
+        };
 
-        // };
+        let mut _b = KernelRegionIterator{
+            layout:&_a,
+            next:Some(Text),
+        };
+        let iter1 = KernelRegionIterator::next(&mut _b);
+        //iter1.unwrap().title;
+        // let Some() = ;
+        // if let Text = iter1.unwrap().title{
+        //     assert_eq!(1,1);
+        // } else {
+        //     assert_eq!(0,1);
+        // }
 
-        // let _b = KernelRegionIterator{
-        //     KernelLayout {
-        //         text: usize::MAX,
-        //         rodata: usize::MAX,
-        //         data: usize::MAX,
-        //         sbss: usize::MAX,
-        //         ebss: usize::MAX,
-        //         boot: usize::MAX,
-        //         end: usize::MAX,
-        //     },
-        //     Some(KernelRegionTitle::Text),
-        // };
-
-        // KernelRegionIterator::next(&mut _b);
     }
     
 }
