@@ -138,13 +138,39 @@ mod tests{
     use crate::init_console;
     use crate::test_log;
     use crate::set_log_level;
+    use core::arch::asm;
     struct Console1;
 
     /// 为 `Console` 实现 `console::Console` trait。
     impl Console for Console1 {
-        fn put_char(&self, _c: u8) {
-            #[allow(deprecated)]
-            legacy::console_putchar(c as _);
+
+        // fn put_char(&self, _c: u8) {
+        //     #[allow(deprecated)]
+        //     legacy::console_putchar(c as _);
+        // }
+
+        fn put_char(&self, ch: u8) {
+            let _ret: usize;
+            let arg0: usize = ch as usize;
+            let arg1: usize = 0;
+            let arg2: usize = 0;
+            let which: usize = 1;
+            unsafe {
+                asm!(                                                                                                
+                    "mv x10, {a}",                                                                                   
+                    "mv x11, {b}",                                                                                   
+                     "mv x12, {c}",                                                                                   
+                    "mv x17, {d}",                                                                                   
+                     "ecall",                                                                                         
+                    "mv {a}, {ret}",                                                                                 
+                     a = inout(reg) args[0],                                                                          
+                     b = in(reg) args[1],                                                                                                                                                                                  
+                    c = in(reg) args[2],
+                    d = in(reg) id,                                                                              					                					                                                                                               
+                    ret = out(reg) ret,                              
+                );           
+                
+            }
         }
     }
 
