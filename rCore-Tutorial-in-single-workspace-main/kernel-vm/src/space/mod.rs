@@ -370,14 +370,14 @@ mod tests{
         let range1 = s.floor()..e.ceil();
         let pbase1: PageNumber<Sv39, Physical>= PPN::new(s.floor().val());
         let flag1 = VmFlags::<Sv39>::VALID;
-        let map1 = (&mut address1).map_extern(range1, pbase1, flag1);
+        (&mut address1).map_extern(range1, pbase1, flag1);
         
         // 分配新的物理页，拷贝数据并建立映射。
-
+        //(&mut address1).map(range1, &[5],1, flag1);
         // 检查 `flags` 的属性要求，然后将地址空间中的一个虚地址翻译成当前地址空间中的指针。
-
+        (& addressspace).translate::<Sv39>(s, flag1);
         // 遍历地址空间，将其中的地址映射添加进自己的地址空间中，重新分配物理页并拷贝所有数据及代码
-
+        (& addressspace).cloneself(&mut address1);
 
     }
 

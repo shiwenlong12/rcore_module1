@@ -313,9 +313,11 @@ mod tests{
 
     }
 
+    use crate::build_sstatus;
     #[test]
     fn test_build_sstatus() {
         //build_sstatus(false,false);
+        //build_sstatus(false,true);
     }
 
     #[test]
