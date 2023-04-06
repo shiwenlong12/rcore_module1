@@ -69,11 +69,14 @@ unsafe impl GlobalAlloc for Global {
 mod tests {
     
     use crate::{init,transfer};
-    use crate::Global;
+    //use crate::Global;
     use crate::Layout;
     use core::alloc::GlobalAlloc;
+    use crate::NonNull;
+    use crate::HEAP;
     // 物理内存容量
     const MEMORY :usize= 9000_0000;
+    
 
     /// 内核地址信息。
     #[derive(Debug)]
@@ -116,19 +119,31 @@ mod tests {
         // 初始化内存分配。
         // 参数 `base_address` 表示动态内存区域的起始位置。
         init(_a.start());
+
         assert_eq!(8200_1000,MEMORY - _a.len());
         assert_eq!(8800_0000,_a.end() as _);
         unsafe{
-            core::slice::from_raw_parts_mut(_a.end() as *mut u8,MEMORY - _a.len(),);
+            let region1 = core::slice::from_raw_parts_mut(_a.end() as *mut u8,MEMORY - _a.len(),);
+            transfer(region1);
         }
+
+        
         
         // 将一个内存块托管到内存分配器。
-        // unsafe {
-        //     transfer(core::slice::from_raw_parts_mut(
-        //         _a.end() as *mut u8,
-        //         MEMORY - _a.len(),
-        //     ))
-        // };
+        unsafe {
+            // transfer(core::slice::from_raw_parts_mut(
+            //     _a.end() as *mut u8,
+            //     MEMORY - _a.len(),
+            // ))
+            let region1 = core::slice::from_raw_parts_mut(
+                _a.end() as *mut u8,
+                MEMORY - _a.len(),
+            );
+            let ptr = NonNull::new(region1.as_mut_ptr()).unwrap();
+            //HEAP.transfer(ptr, region1.len());
+            HEAP.capacity();
+            assert_eq!(0,HEAP.capacity());
+        }
 
         //实现page_alloc
         extern "Rust" {
@@ -160,9 +175,9 @@ mod tests {
         //     //这里的 align 必须是2的幂次。
         //     align: 1024,
         // };
-        let global = Global{};
-        unsafe{
-            let a = Global::alloc(&global,layout);
-        }
+        // let global = Global{};
+        // unsafe{
+        //     let a = Global::alloc(&global,layout);
+        // }
     }
 }

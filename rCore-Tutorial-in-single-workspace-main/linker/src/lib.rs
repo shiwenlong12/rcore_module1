@@ -321,7 +321,7 @@ mod tests{
             layout:&_a,
             next:Some(Text),
         };
-        let iter1 = KernelRegionIterator::next(&mut _b);
+        let _iter1 = KernelRegionIterator::next(&mut _b);
         //iter1.unwrap().title;
         // let Some() = ;
         // if let Text = iter1.unwrap().title{
@@ -332,9 +332,10 @@ mod tests{
 
     }
 
+    use crate::app::{AppIterator, AppMeta};
     #[test]
     fn test_app() {
-
+        
     }
     
 }

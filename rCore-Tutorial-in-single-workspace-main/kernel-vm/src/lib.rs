@@ -48,7 +48,7 @@ pub trait PageManager<Meta: VmMeta> {
 # [cfg(test)]
 mod tests{
 
-    //use crate::space::mapper::Mapper;
+    use crate::space::mapper;
     use crate::space::AddressSpace;
     use core::{alloc::Layout, ptr::NonNull};
     use crate::{
@@ -150,10 +150,94 @@ mod tests{
 
     #[test]
     fn test_mapper() {
-        
+        let layout = KernelLayout {
+            text: 8000_1000,
+            rodata: 8000_2000,
+            data: 8000_3000,
+            sbss: 8000_4000,
+            ebss: 8000_5000,
+            boot: 8000_6000,
+            end: 8000_8000,
+        };
+        let mut address1 = AddressSpace::<Sv39, Sv39Manager>::new();
+        let memory = 1000_0000;
+        let s = VAddr::<Sv39>::new(layout.end());
+        let e = VAddr::<Sv39>::new(layout.start()+memory);
+        let range1 = s.floor()..e.ceil();
+        let flag1 = VmFlags::<Sv39>::VALID;
+        //mapper::Mapper::new(&mut address1, range1, flag1);
     }
 
+    /// 内核地址信息。
+    #[derive(Debug)]
+    pub struct KernelLayout {
+        text: usize,
+        rodata: usize,
+        data: usize,
+        sbss: usize,
+        ebss: usize,
+        boot: usize,
+        end: usize,
+    }
 
+    impl KernelLayout {
+        /// 非零初始化，避免 bss。
+        pub const INIT: Self = Self {
+            text: usize::MAX,
+            rodata: usize::MAX,
+            data: usize::MAX,
+            sbss: usize::MAX,
+            ebss: usize::MAX,
+            boot: usize::MAX,
+            end: usize::MAX,
+        };
+
+        /// 定位内核布局。
+        #[inline]
+        pub fn locate() -> Self {
+            extern "C" {
+                fn __start();
+                fn __rodata();
+                fn __data();
+                fn __sbss();
+                fn __ebss();
+                fn __boot();
+                fn __end();
+            }
+
+            Self {
+                text: __start as _,
+                rodata: __rodata as _,
+                data: __data as _,
+                sbss: __sbss as _,
+                ebss: __ebss as _,
+                boot: __boot as _,
+                end: __end as _,
+            }
+        }
+
+        /// 内核起始地址。
+        #[inline]
+        pub const fn start(&self) -> usize {
+            self.text
+        }
+
+        /// 内核结尾地址。
+        #[inline]
+        pub const fn end(&self) -> usize {
+            self.end
+        }
+
+        /// 内核静态二进制长度。
+        #[inline]
+        pub const fn len(&self) -> usize {
+            self.end - self.text
+        }
+
+    }
+
+    use page_table::PageNumber;
+    use page_table::Physical;
     #[test]
     fn test_space() {
         // 创建新地址空间。
@@ -164,11 +248,24 @@ mod tests{
         let root = (& addressspace).root();
         // 向地址空间增加映射关系。
         let mut address1 = AddressSpace::<Sv39, Sv39Manager>::new();
-        //let range = Range::VPN::Sv39::new();
         let pages = 2;
-        //VPN::new((1 << 26) - pages)..VPN::new(1 << 26);
-        //PageNumber::<Meta, S>::new;
-        //let map1 = (&mut address1).map_extern();
+        let layout = KernelLayout {
+            text: 8000_1000,
+            rodata: 8000_2000,
+            data: 8000_3000,
+            sbss: 8000_4000,
+            ebss: 8000_5000,
+            boot: 8000_6000,
+            end: 8000_8000,
+        };
+        let memory = 1000_0000;
+        let s = VAddr::<Sv39>::new(layout.end());
+        let e = VAddr::<Sv39>::new(layout.start()+memory);
+        let range1 = s.floor()..e.ceil();
+        let pbase1: PageNumber<Sv39, Physical>= PPN::new(s.floor().val());
+        let flag1 = VmFlags::<Sv39>::VALID;
+        let map1 = (&mut address1).map_extern(range1, pbase1, flag1);
+        
         // 分配新的物理页，拷贝数据并建立映射。
 
         // 检查 `flags` 的属性要求，然后将地址空间中的一个虚地址翻译成当前地址空间中的指针。
@@ -179,4 +276,7 @@ mod tests{
     }
 
 
+
+
 }
+
