@@ -76,7 +76,7 @@ mod tests{
         let mut _a = IntrMaskingInfo::new();
         let a =INTR_MASKING_INFO.get_mut();
         unsafe{
-            //let sie = sstatus::sie();
+            let sie = sstatus::read().sie();
         }
         
         //(&mut a).exit();
