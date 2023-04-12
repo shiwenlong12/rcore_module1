@@ -6,6 +6,7 @@ use bitflags::*;
 use crate::Inode;
 
 ///Array of u8 slice that user communicate with os
+/// 用户与os通信的u8切片数组
 pub struct UserBuffer {
     ///U8 vec
     pub buffers: Vec<&'static mut [u8]>,

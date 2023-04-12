@@ -41,19 +41,19 @@ impl From<usize> for SyscallId {
 
 
 
-# [cfg(test)]
-mod tests{
+// # [cfg(test)]
+// mod tests{
 
-    // use crate::kernel::Caller;
-    // use crate::kernel::handle;
-    // use crate::SyscallId;
+//     // use crate::kernel::Caller;
+//     // use crate::kernel::handle;
+//     // use crate::SyscallId;
 
-    #[test]
-    fn test_handle() {
-        // let caller = Caller { entity: 0, flow: 0 };
-        // let id = SyscallId(64);
-        // let args = [0; 6];
-        // handle(caller, id, args);
+//     #[test]
+//     fn test_handle() {
+//         // let caller = Caller { entity: 0, flow: 0 };
+//         // let id = SyscallId(64);
+//         // let args = [0; 6];
+//         // handle(caller, id, args);
 
-    }
-}
+//     }
+// }

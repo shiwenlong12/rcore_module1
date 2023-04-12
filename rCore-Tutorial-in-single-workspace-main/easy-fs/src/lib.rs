@@ -28,38 +28,44 @@ mod tests{
     //use crate::BlockDevice;
     use crate::file::{UserBuffer};
 
-    // use alloc::{
-    //     alloc::{alloc_zeroed, dealloc},
-    //     sync::Arc,
-    // };
-    // use core::{alloc::Layout, ptr::NonNull};
-    // use crate::BlockDevice;
-    // use spin::{Lazy, Mutex};
-    // use virtio_drivers::{Hal, VirtIOBlk, VirtIOHeader};
-    // use core::mem::MaybeUninit;
+    use alloc::{
+        alloc::{alloc_zeroed, dealloc},
+        sync::Arc,
+    };
+    use core::{alloc::Layout, ptr::NonNull};
+    use crate::BlockDevice;
+    use spin::{Lazy, Mutex};
+    use virtio_drivers::{Hal, VirtIOBlk, VirtIOHeader};
+    use core::mem::MaybeUninit;
 
-    // use page_table::{MmuMeta, Pte, VAddr, VmFlags, PPN, VPN};
+    use page_table::{MmuMeta, Pte, VAddr, VmFlags, PPN, VPN};
 
-    // #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-    // pub(crate) struct Sv39;
+    use alloc::vec::Vec;
+    use core::ops::Range;
+    use page_table::VmMeta;
+    use page_table::Pos;
+    use page_table::PageTable;
 
-    // impl MmuMeta for Sv39 {
-    //     const P_ADDR_BITS: usize = 56;
-    //     const PAGE_BITS: usize = 12;
-    //     const LEVEL_BITS: &'static [usize] = &[9; 3];
-    //     const PPN_POS: usize = 10;
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+    pub(crate) struct Sv39;
 
-    //     #[inline]
-    //     fn is_leaf(value: usize) -> bool {
-    //         const MASK: usize = 0b1110;
-    //         value & MASK != 0
-    //     }
-    // }
+    impl MmuMeta for Sv39 {
+        const P_ADDR_BITS: usize = 56;
+        const PAGE_BITS: usize = 12;
+        const LEVEL_BITS: &'static [usize] = &[9; 3];
+        const PPN_POS: usize = 10;
 
-    // #[repr(transparent)]
-    // pub struct Sv39Manager(NonNull<Pte<Sv39>>);
+        #[inline]
+        fn is_leaf(value: usize) -> bool {
+            const MASK: usize = 0b1110;
+            value & MASK != 0
+        }
+    }
 
-    // //实现page_alloc
+    #[repr(transparent)]
+    pub struct Sv39Manager(NonNull<Pte<Sv39>>);
+
+    //实现page_alloc
     // extern "Rust" {
     //     fn __rust_alloc_zeroed(size: usize, align: usize) -> *mut u8;
     // }
@@ -71,156 +77,368 @@ mod tests{
     //     unsafe { __rust_alloc_zeroed(layout.size(), layout.align()) }
     // }
 
-    // impl Sv39Manager {
-    //     const OWNED: VmFlags<Sv39> = unsafe { VmFlags::from_raw(1 << 8) };
+    impl Sv39Manager {
+        const OWNED: VmFlags<Sv39> = unsafe { VmFlags::from_raw(1 << 8) };
 
-    //     #[inline]
-    //     fn page_alloc<T>(count: usize) -> *mut T {
-    //         unsafe {
-    //             alloc_zeroed(Layout::from_size_align_unchecked(
-    //                 count << Sv39::PAGE_BITS,
-    //                 1 << Sv39::PAGE_BITS,
-    //             ))
-    //         }
-    //         .cast()
-    //     }
-    // }
+        #[inline]
+        fn page_alloc<T>(count: usize) -> *mut T {
+            unsafe {
+                alloc_zeroed(Layout::from_size_align_unchecked(
+                    count << Sv39::PAGE_BITS,
+                    1 << Sv39::PAGE_BITS,
+                ))
+            }
+            .cast()
+        }
+    }
 
-    // impl PageManager<Sv39> for Sv39Manager {
-    //     #[inline]
-    //     fn new_root() -> Self {
-    //         Self(NonNull::new(Self::page_alloc(1)).unwrap())
-    //     }
+    pub trait PageManager<Meta: VmMeta> {
+        /// 新建根页表页。
+        fn new_root() -> Self;
+    
+        /// 获取根页表。
+        fn root_ptr(&self) -> NonNull<Pte<Meta>>;
+    
+        /// 获取根页表的物理页号。
+        #[inline]
+        fn root_ppn(&self) -> PPN<Meta> {
+            self.v_to_p(self.root_ptr())
+        }
+    
+        /// 计算当前地址空间上指向物理页的指针。
+        fn p_to_v<T>(&self, ppn: PPN<Meta>) -> NonNull<T>;
+    
+        /// 计算当前地址空间上的指针指向的物理页。
+        fn v_to_p<T>(&self, ptr: NonNull<T>) -> PPN<Meta>;
+    
+        /// 检查是否拥有一个页的所有权。
+        fn check_owned(&self, pte: Pte<Meta>) -> bool;
+    
+        /// 为地址空间分配 `len` 个物理页。
+        fn allocate(&mut self, len: usize, flags: &mut VmFlags<Meta>) -> NonNull<u8>;
+    
+        /// 从地址空间释放 `pte` 指示的 `len` 个物理页。
+        fn deallocate(&mut self, pte: Pte<Meta>, len: usize) -> usize;
+    
+        /// 释放根页表。
+        fn drop_root(&mut self);
+    }
+    
 
-    //     #[inline]
-    //     fn root_ppn(&self) -> PPN<Sv39> {
-    //         PPN::new(self.0.as_ptr() as usize >> Sv39::PAGE_BITS)
-    //     }
+    impl PageManager<Sv39> for Sv39Manager {
+        #[inline]
+        fn new_root() -> Self {
+            Self(NonNull::new(Self::page_alloc(1)).unwrap())
+        }
 
-    //     #[inline]
-    //     fn root_ptr(&self) -> NonNull<Pte<Sv39>> {
-    //         self.0
-    //     }
+        #[inline]
+        fn root_ppn(&self) -> PPN<Sv39> {
+            PPN::new(self.0.as_ptr() as usize >> Sv39::PAGE_BITS)
+        }
 
-    //     #[inline]
-    //     fn p_to_v<T>(&self, ppn: PPN<Sv39>) -> NonNull<T> {
-    //         unsafe { NonNull::new_unchecked(VPN::<Sv39>::new(ppn.val()).base().as_mut_ptr()) }
-    //     }
+        #[inline]
+        fn root_ptr(&self) -> NonNull<Pte<Sv39>> {
+            self.0
+        }
 
-    //     #[inline]
-    //     fn v_to_p<T>(&self, ptr: NonNull<T>) -> PPN<Sv39> {
-    //         PPN::new(VAddr::<Sv39>::new(ptr.as_ptr() as _).floor().val())
-    //     }
+        #[inline]
+        fn p_to_v<T>(&self, ppn: PPN<Sv39>) -> NonNull<T> {
+            unsafe { NonNull::new_unchecked(VPN::<Sv39>::new(ppn.val()).base().as_mut_ptr()) }
+        }
 
-    //     #[inline]
-    //     fn check_owned(&self, pte: Pte<Sv39>) -> bool {
-    //         pte.flags().contains(Self::OWNED)
-    //     }
+        #[inline]
+        fn v_to_p<T>(&self, ptr: NonNull<T>) -> PPN<Sv39> {
+            PPN::new(VAddr::<Sv39>::new(ptr.as_ptr() as _).floor().val())
+        }
 
-    //     #[inline]
-    //     fn allocate(&mut self, len: usize, flags: &mut VmFlags<Sv39>) -> NonNull<u8> {
-    //         *flags |= Self::OWNED;
-    //         NonNull::new(Self::page_alloc(len)).unwrap()
-    //     }
+        #[inline]
+        fn check_owned(&self, pte: Pte<Sv39>) -> bool {
+            pte.flags().contains(Self::OWNED)
+        }
 
-    //     fn deallocate(&mut self, _pte: Pte<Sv39>, _len: usize) -> usize {
-    //         todo!()
-    //     }
+        #[inline]
+        fn allocate(&mut self, len: usize, flags: &mut VmFlags<Sv39>) -> NonNull<u8> {
+            *flags |= Self::OWNED;
+            NonNull::new(Self::page_alloc(len)).unwrap()
+        }
 
-    //     fn drop_root(&mut self) {
-    //         todo!()
-    //     }
-    // } 
+        fn deallocate(&mut self, _pte: Pte<Sv39>, _len: usize) -> usize {
+            todo!()
+        }
+
+        fn drop_root(&mut self) {
+            todo!()
+        }
+    } 
+
+    pub struct Visitor<'a, Meta: VmMeta, M: PageManager<Meta>> {
+        space: &'a AddressSpace<Meta, M>,
+        ans: Option<Pte<Meta>>,
+    }
+    
+    impl<'a, Meta: VmMeta, M: PageManager<Meta>> Visitor<'a, Meta, M> {
+        #[inline]
+        pub const fn new(space: &'a AddressSpace<Meta, M>) -> Self {
+            Self { space, ans: None }
+        }
+    
+        #[inline]
+        pub const fn ans(self) -> Option<Pte<Meta>> {
+            self.ans
+        }
+    }
+
+    impl<'a, Meta: VmMeta, M: PageManager<Meta>> page_table::Visitor<Meta> for Visitor<'a, Meta, M> {
+        #[inline]
+        fn arrive(&mut self, pte: Pte<Meta>, _target_hint: Pos<Meta>) -> Pos<Meta> {
+            if pte.is_valid() {
+                self.ans = Some(pte);
+            }
+            Pos::stop()
+        }
+    
+        #[inline]
+        fn meet(
+            &mut self,
+            _level: usize,
+            pte: Pte<Meta>,
+            _target_hint: Pos<Meta>,
+        ) -> Option<NonNull<Pte<Meta>>> {
+            Some(self.space.page_manager.p_to_v(pte.ppn()))
+        }
+    
+        #[inline]
+        fn block(&mut self, _level: usize, _pte: Pte<Meta>, _target: Pos<Meta>) -> Pos<Meta> {
+            Pos::stop()
+        }
+    }
+    
 
 
+    /// 地址空间。
+    pub struct AddressSpace<Meta: VmMeta, M: PageManager<Meta>> {
+        /// 虚拟地址块
+        pub areas: Vec<Range<VPN<Meta>>>,
+        page_manager: M,
+    }
+
+    impl<Meta: VmMeta, M: PageManager<Meta>> AddressSpace<Meta, M> {
+        /// 地址空间根页表
+        #[inline]
+        pub fn root(&self) -> PageTable<Meta> {
+            unsafe { PageTable::from_root(self.page_manager.root_ptr()) }
+        }
+
+        /// 检查 `flags` 的属性要求，然后将地址空间中的一个虚地址翻译成当前地址空间中的指针。
+        pub fn translate<T>(&self, addr: VAddr<Meta>, flags: VmFlags<Meta>) -> Option<NonNull<T>> {
+            let mut visitor = Visitor::new(self);
+            self.root().walk(Pos::new(addr.floor(), 0), &mut visitor);
+            visitor
+                .ans()
+                .filter(|pte| pte.flags().contains(flags))
+                .map(|pte| unsafe {
+                    NonNull::new_unchecked(
+                        self.page_manager
+                            .p_to_v::<u8>(pte.ppn())
+                            .as_ptr()
+                            .add(addr.offset())
+                            .cast(),
+                    )
+                })
+        }
+    }
 
 
-    // static mut KERNEL_SPACE: MaybeUninit<AddressSpace<Sv39, Sv39Manager>> = MaybeUninit::uninit();
-    // const VIRTIO0: usize = 0x10001000;
+    static mut KERNEL_SPACE: MaybeUninit<AddressSpace<Sv39, Sv39Manager>> = MaybeUninit::uninit();
+    const VIRTIO0: usize = 0x10001000;
 
-    // pub static BLOCK_DEVICE: Lazy<Arc<dyn BlockDevice>> = Lazy::new(|| {
-    //     Arc::new(unsafe {
-    //         VirtIOBlock(Mutex::new(
-    //             VirtIOBlk::new(&mut *(VIRTIO0 as *mut VirtIOHeader)).unwrap(),
-    //         ))
-    //     })
-    // });
-    // struct VirtIOBlock(Mutex<VirtIOBlk<'static, VirtioHal>>);
+    pub static BLOCK_DEVICE: Lazy<Arc<dyn BlockDevice>> = Lazy::new(|| {
+        Arc::new(unsafe {
+            VirtIOBlock(Mutex::new(
+                VirtIOBlk::new(&mut *(VIRTIO0 as *mut VirtIOHeader)).unwrap(),
+            ))
+        })
+    });
 
-    // impl BlockDevice for VirtIOBlock {
-    //     fn read_block(&self, block_id: usize, buf: &mut [u8]) {
-    //         self.0
-    //             .lock()
-    //             .read_block(block_id, buf)
-    //             .expect("Error when reading VirtIOBlk");
-    //     }
-    //     fn write_block(&self, block_id: usize, buf: &[u8]) {
-    //         self.0
-    //             .lock()
-    //             .write_block(block_id, buf)
-    //             .expect("Error when writing VirtIOBlk");
-    //     }
-    // }
-    // struct VirtioHal;
 
-    // impl Hal for VirtioHal {
-    //     fn dma_alloc(pages: usize) -> usize {
-    //         // warn!("dma_alloc");
-    //         unsafe {
-    //             alloc_zeroed(Layout::from_size_align_unchecked(
-    //                 pages << Sv39::PAGE_BITS,
-    //                 1 << Sv39::PAGE_BITS,
-    //             )) as _
-    //         }
-    //     }
+    struct VirtIOBlock(Mutex<VirtIOBlk<'static, VirtioHal>>);
 
-    //     fn dma_dealloc(paddr: usize, pages: usize) -> i32 {
-    //         // warn!("dma_dealloc");
-    //         unsafe {
-    //             dealloc(
-    //                 paddr as _,
-    //                 Layout::from_size_align_unchecked(pages << Sv39::PAGE_BITS, 1 << Sv39::PAGE_BITS),
-    //             )
-    //         }
-    //         0
-    //     }
+    impl BlockDevice for VirtIOBlock {
+        fn read_block(&self, block_id: usize, buf: &mut [u8]) {
+            self.0
+                .lock()
+                .read_block(block_id, buf)
+                .expect("Error when reading VirtIOBlk");
+        }
+        fn write_block(&self, block_id: usize, buf: &[u8]) {
+            self.0
+                .lock()
+                .write_block(block_id, buf)
+                .expect("Error when writing VirtIOBlk");
+        }
+    }
+    struct VirtioHal;
 
-    //     fn phys_to_virt(paddr: usize) -> usize {
-    //         // warn!("p2v");
-    //         paddr
-    //     }
+    impl Hal for VirtioHal {
+        fn dma_alloc(pages: usize) -> usize {
+            // warn!("dma_alloc");
+            unsafe {
+                alloc_zeroed(Layout::from_size_align_unchecked(
+                    pages << Sv39::PAGE_BITS,
+                    1 << Sv39::PAGE_BITS,
+                )) as _
+            }
+        }
 
-    //     fn virt_to_phys(vaddr: usize) -> usize {
-    //         // warn!("v2p");
-    //         const VALID: VmFlags<Sv39> = VmFlags::build_from_str("__V");
-    //         let ptr: NonNull<u8> = unsafe {
-    //             KERNEL_SPACE
-    //                 .assume_init_ref()
-    //                 .translate(VAddr::new(vaddr), VALID)
-    //                 .unwrap()
-    //         };
-    //         ptr.as_ptr() as usize
-    //     }
-    // }
+        fn dma_dealloc(paddr: usize, pages: usize) -> i32 {
+            // warn!("dma_dealloc");
+            unsafe {
+                dealloc(
+                    paddr as _,
+                    Layout::from_size_align_unchecked(pages << Sv39::PAGE_BITS, 1 << Sv39::PAGE_BITS),
+                )
+            }
+            0
+        }
+
+        fn phys_to_virt(paddr: usize) -> usize {
+            // warn!("p2v");
+            paddr
+        }
+
+        fn virt_to_phys(vaddr: usize) -> usize {
+            // warn!("v2p");
+            // const VALID: VmFlags<Sv39> = VmFlags::build_from_str("__V");
+            const VALID: VmFlags<Sv39> = VmFlags::<Sv39>::VALID;
+            let ptr: NonNull<u8> = unsafe {
+                KERNEL_SPACE
+                    .assume_init_ref()
+                    .translate(VAddr::new(vaddr), VALID)
+                    .unwrap()
+            };
+            ptr.as_ptr() as usize
+        }
+    }
+
+    use alloc::{string::String};
+    use crate::{EasyFileSystem, FSManager, FileHandle, Inode, OpenFlags};
+    //use spin::Lazy;
+    
+    pub static FS: Lazy<FileSystem> = Lazy::new(|| FileSystem {
+        root: EasyFileSystem::root_inode(&EasyFileSystem::open(BLOCK_DEVICE.clone())),
+    });
+    
+    pub struct FileSystem {
+        root: Inode,
+    }
+    
+    impl FSManager for FileSystem {
+        fn open(&self, path: &str, flags: OpenFlags) -> Option<Arc<FileHandle>> {
+            let (readable, writable) = flags.read_write();
+            if flags.contains(OpenFlags::CREATE) {
+                if let Some(inode) = self.find(path) {
+                    // Clear size
+                    inode.clear();
+                    Some(Arc::new(FileHandle::new(readable, writable, inode)))
+                } else {
+                    // Create new file
+                    self.root
+                        .create(path)
+                        .map(|new_inode| Arc::new(FileHandle::new(readable, writable, new_inode)))
+                }
+            } else {
+                self.find(path).map(|inode| {
+                    if flags.contains(OpenFlags::TRUNC) {
+                        inode.clear();
+                    }
+                    Arc::new(FileHandle::new(readable, writable, inode))
+                })
+            }
+        }
+    
+        fn find(&self, path: &str) -> Option<Arc<Inode>> {
+            self.root.find(path)
+        }
+    
+        fn readdir(&self, _path: &str) -> Option<alloc::vec::Vec<String>> {
+            Some(self.root.readdir())
+        }
+    
+        fn link(&self, _src: &str, _dst: &str) -> isize {
+            unimplemented!()
+        }
+    
+        fn unlink(&self, _path: &str) -> isize {
+            unimplemented!()
+        }
+    }
+    
+    pub fn read_all(fd: Arc<FileHandle>) -> Vec<u8> {
+        let mut offset = 0usize;
+        let mut buffer = [0u8; 512];
+        let mut v: Vec<u8> = Vec::new();
+        if let Some(inode) = &fd.inode {
+            loop {
+                let len = inode.read_at(offset, &mut buffer);
+                if len == 0 {
+                    break;
+                }
+                offset += len;
+                v.extend_from_slice(&buffer[..len]);
+            }
+        }
+        v
+    }
+    
 
 
 
     #[test]
     fn test_bitmap() {
-        // let mut a = 10;
-        // decomposition(a);
-        let bitmap1 = Bitmap::new(0,10);
+        let bitmap1 = Bitmap::new(VIRTIO0,100);
+        let _a = &BLOCK_DEVICE.clone();
+        //bitmap1.alloc(&BLOCK_DEVICE.clone());
+        //(& bitmap1).dealloc(&block_device1, 300);
+        //测试获取可分配块的最大数量
+        assert_eq!(409600, (& bitmap1).maximum());
     }
 
+    use crate::block_cache::*;
+    use crate::BLOCK_SZ;
     #[test]
     fn test_block_cache() {
-        
+        let block_id = VIRTIO0+4096;
+        //let _a = BLOCK_DEVICE.clone();
+        let mut cache = [0u8; BLOCK_SZ];
+        //block_device.read_block(block_id, &mut cache);
+        // BlockCache {
+        //     cache,
+        //     block_id,
+        //     block_device,
+        //     modified: false,
+        // };
+        let block_device1: Lazy<Arc<dyn BlockDevice>> = Lazy::new(|| {
+            Arc::new(unsafe {
+                VirtIOBlock(Mutex::new(
+                    VirtIOBlk::new(&mut *(VIRTIO0 as *mut VirtIOHeader)).unwrap(),
+                ))
+            })
+        });
+        //let _a = block_device1.clone();
+        //BlockCache::new(VIRTIO0+4096, BLOCK_DEVICE.clone());
+        BlockCacheManager::new();
     }
+
 
     #[test]
     fn test_efs() {
+        //let initproc = read_all(FS.open("initproc", OpenFlags::RDONLY).unwrap());
+        //EasyFileSystem::create(BLOCK_DEVICE.clone(), 4096*5, 4096);
+        //EasyFileSystem::root_inode(&EasyFileSystem::open(BLOCK_DEVICE.clone()));
+        EasyFileSystem::open(BLOCK_DEVICE.clone());
         
     }
+
 
     #[test]
     fn test_file() {

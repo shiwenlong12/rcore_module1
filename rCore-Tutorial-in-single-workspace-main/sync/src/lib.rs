@@ -27,18 +27,22 @@ mod tests{
     use crate::{UPIntrFreeCell, UPIntrRefMut};
     use rcore_task_manage::ThreadId;
 
-    use riscv::register::sstatus;
+    //use riscv::register::sstatus;
 
     pub struct SyscallContext;
 
 
     #[test]
     fn test_condvar() {
-        let _a = Condvar::new();
+        let condver1 = Condvar::new();
+
         //(& _a).signal();
         let tid1 = ThreadId::new();
         let tid2 = ThreadId::from_usize(0);
+
+        //wait_queue.push_back(tid2);
         assert_eq!(tid1, tid2);
+        //condver1.inner.exclusive_session(tid2);
         //(& _a).wait_no_sched(tid2);
     }
 
@@ -57,6 +61,8 @@ mod tests{
         //(& _a).up();
     }
 
+    use riscv::register::sstatus;
+    use crate::up::INTR_MASKING_INFO;
     #[test]
     fn test_up() {
 
@@ -68,11 +74,16 @@ mod tests{
         }
         
         let mut _a = IntrMaskingInfo::new();
+        let a =INTR_MASKING_INFO.get_mut();
+        unsafe{
+            //let sie = sstatus::sie();
+        }
+        
         //(&mut a).exit();
         //(&mut a).enter();
         unsafe{
             let upintr = UPIntrFreeCell::new(value);
-            (& upintr).exclusive_access();
+            //(& upintr).exclusive_access();
         }
 
     }

@@ -320,8 +320,9 @@ mod tests{
         //build_sstatus(false,true);
     }
 
+    use crate::foreign::{PortalCache, ForeignContext};
     #[test]
-    fn test_execute() {
+    fn test_foreign() {
         // let mut _a = LocalContext::empty();
         // let mut _b = ForeignContext {
         //     /// 目标地址空间上的线程上下文。

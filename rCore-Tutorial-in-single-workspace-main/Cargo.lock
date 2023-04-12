@@ -225,6 +225,7 @@ name = "easy-fs"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "page-table",
  "spin 0.7.1",
  "virtio-drivers",
 ]

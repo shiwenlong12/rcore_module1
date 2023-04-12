@@ -45,13 +45,17 @@ impl Inode {
     }
 
     /// Find inode under a disk inode by name
+    /// 按名称查找磁盘索引节点下的索引节点
+    /// 从根目录里面找到name对应的目录项
     fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<u32> {
         // assert it is a directory
         assert!(disk_inode.is_dir());
         let file_count = (disk_inode.size as usize) / DIRENT_SZ;
         let mut dirent = DirEntry::empty();
+        //遍历里面所有的目录项
         for i in 0..file_count {
             assert_eq!(
+                //把根目录里的第i个目录项读到dirent里
                 disk_inode.read_at(DIRENT_SZ * i, dirent.as_bytes_mut(), &self.block_device,),
                 DIRENT_SZ,
             );
@@ -63,6 +67,7 @@ impl Inode {
     }
 
     /// Find inode under current inode by name
+    /// 按名称查找当前inode下的inode
     pub fn find(&self, name: &str) -> Option<Arc<Inode>> {
         let fs = self.fs.lock();
         self.read_disk_inode(|disk_inode| {
@@ -79,6 +84,7 @@ impl Inode {
     }
 
     /// Increase the size of a disk inode
+    /// 增加磁盘索引节点的大小
     fn increase_size(
         &self,
         new_size: u32,
@@ -98,6 +104,7 @@ impl Inode {
 
     /// Create inode under current inode by name.
     /// Attention: use find previously to ensure the new file not existing.
+    /// 通过名称创建当前inode下的inode
     pub fn create(&self, name: &str) -> Option<Arc<Inode>> {
         let mut fs = self.fs.lock();
         // create a new file
@@ -138,6 +145,7 @@ impl Inode {
     }
 
     /// List inodes by id under current inode
+    /// 列出当前索引节点下的索引节点
     pub fn readdir(&self) -> Vec<String> {
         let _fs = self.fs.lock();
         self.read_disk_inode(|disk_inode| {
@@ -156,12 +164,14 @@ impl Inode {
     }
 
     /// Read data from current inode
+    /// 从当前索引节点读取数据
     pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
         let _fs = self.fs.lock();
         self.read_disk_inode(|disk_inode| disk_inode.read_at(offset, buf, &self.block_device))
     }
 
     /// Write data to current inode
+    /// 对当前索引节点写数据
     pub fn write_at(&self, offset: usize, buf: &[u8]) -> usize {
         let mut fs = self.fs.lock();
         let size = self.modify_disk_inode(|disk_inode| {
@@ -173,6 +183,7 @@ impl Inode {
     }
 
     /// Clear the data in current inode
+    /// 清除当前索引节点中的数据
     pub fn clear(&self) {
         let mut fs = self.fs.lock();
         self.modify_disk_inode(|disk_inode| {
