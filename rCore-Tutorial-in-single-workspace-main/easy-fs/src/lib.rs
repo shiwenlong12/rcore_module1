@@ -2,7 +2,7 @@
 #![no_std]
 // #![deny(missing_docs)]
 extern crate alloc;
-mod bitmap;
+pub mod bitmap;
 mod block_cache;
 mod block_dev;
 mod efs;
@@ -454,18 +454,64 @@ mod tests{
         // UserBuffer::new(v);
     }
 
-    use crate::layout::{SuperBlock};
+    use crate::layout::{SuperBlock, DiskInode, DiskInodeType};
+    /// Magic number for sanity check
+    const EFS_MAGIC: u32 = 0x3b800001;
+    /// The max number of direct inodes
+    const INODE_DIRECT_COUNT: usize = 28;
+    /// The max length of inode name
+    const NAME_LENGTH_LIMIT: usize = 27;
+    /// The max number of indirect1 inodes
+    const INODE_INDIRECT1_COUNT: usize = BLOCK_SZ / 4;
+    /// The max number of indirect2 inodes
+    const INODE_INDIRECT2_COUNT: usize = INODE_INDIRECT1_COUNT * INODE_INDIRECT1_COUNT;
+    /// The upper bound of direct inode index
+    const DIRECT_BOUND: usize = INODE_DIRECT_COUNT;
+    /// The upper bound of indirect1 inode index
+    const INDIRECT1_BOUND: usize = DIRECT_BOUND + INODE_INDIRECT1_COUNT;
+    /// The upper bound of indirect2 inode indexs
+    #[allow(unused)]
+    const INDIRECT2_BOUND: usize = INDIRECT1_BOUND + INODE_INDIRECT2_COUNT;
     #[test]
     fn test_layout() {
-        // let mut a = SuperBlock{
-        //     magic: 0x3b800001,
-        //     total_blocks: 512,
-        //     inode_bitmap_blocks: 1,
-        //     inode_area_blocks: 1,
-        //     data_bitmap_blocks: 1,
-        //     data_area_blocks: 1,
-        // };
-        //SuperBlock::initialize(0x3b800001,10,10,10,10);
+        let mut superblock = SuperBlock{
+            magic: 0x3b800001,
+            total_blocks: 512,
+            inode_bitmap_blocks: 1,
+            inode_area_blocks: 1,
+            data_bitmap_blocks: 1,
+            data_area_blocks: 1,
+        };
+        (&mut superblock).initialize(0x3b800001,10,10,10,10);
+        assert_eq!(true, (&superblock).is_valid());
+
+        let mut diskinode = DiskInode{
+            size:0,
+            direct: [0; INODE_DIRECT_COUNT],
+            indirect1: 0,
+            indirect2: 0,
+            //目录还是文件
+            type_: DiskInodeType::File
+        };
+        //测试初始化
+        (&mut diskinode).initialize(DiskInodeType::Directory);
+        //判断是否是目录
+        assert_eq!(true, (&diskinode).is_dir());
+
+        (&mut diskinode).initialize(DiskInodeType::File);
+        //判断是否是文件
+        assert_eq!(true, (&diskinode).is_file());
+        let datablocks = (&diskinode).data_blocks();
+        assert_eq!(0, datablocks);
+        //分别调用直接索引，一级索引，二级索引时的数据块个数
+        let tolal1 = DiskInode::total_blocks(4096);
+        let tolal2 = DiskInode::total_blocks(13825);
+        let tolal3 = DiskInode::total_blocks(79360);
+        assert_eq!(8, tolal1);
+        assert_eq!(28, tolal2);
+        assert_eq!(156, tolal3);
+        let needed1 = (&diskinode).blocks_num_needed(4096);
+        assert_eq!(8, needed1);
     }
 
     #[test]
@@ -473,3 +519,4 @@ mod tests{
         
     }
 }
+

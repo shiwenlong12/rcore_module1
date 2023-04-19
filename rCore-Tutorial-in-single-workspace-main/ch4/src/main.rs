@@ -77,6 +77,7 @@ extern "C" fn rust_main() -> ! {
 
     // 建立调度栈
     const PAGE: Layout =
+        //size:8192,align:4096
         unsafe { Layout::from_size_align_unchecked(2 << Sv39::PAGE_BITS, 1 << Sv39::PAGE_BITS) };
     let pages = 2;
     let stack = unsafe { alloc(PAGE) };

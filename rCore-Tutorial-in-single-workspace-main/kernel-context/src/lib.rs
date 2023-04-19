@@ -320,7 +320,7 @@ mod tests{
         //build_sstatus(false,true);
     }
 
-    use crate::foreign::{PortalCache, ForeignContext};
+    //use crate::foreign::{PortalCache, ForeignContext};
     #[test]
     fn test_foreign() {
         // let mut _a = LocalContext::empty();

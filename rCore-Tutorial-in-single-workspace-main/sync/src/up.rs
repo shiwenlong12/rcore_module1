@@ -83,6 +83,7 @@ impl IntrMaskingInfo {
         self.nested_level -= 1;
         if self.nested_level == 0 && self.sie_before_masking {
             unsafe {
+                // 开启 SIE（不是 sie 寄存器），允许内核态被中断打断
                 sstatus::set_sie();
             }
         }

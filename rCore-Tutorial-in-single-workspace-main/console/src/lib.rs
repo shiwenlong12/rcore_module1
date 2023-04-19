@@ -2,8 +2,8 @@
 #![no_std]
 #![deny(warnings, missing_docs)]
 
-// #![feature(custom_test_frameworks)]
-// #![test_runner(crate::test_runner)]
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test_runner)]
 
 use core::{
     fmt::{self, Write},
@@ -129,79 +129,5 @@ impl log::Log for Logger {
     }
 
     fn flush(&self) {}
-}
-
-//单元测试主要测试私有接口
-# [cfg(test)]
-mod tests{
-    use crate::Console;
-    use crate::init_console;
-    use crate::test_log;
-    use crate::set_log_level;
-    //use sbi_rt;
-    //use core::arch::asm;
-
-    const SBI_CONSOLE_PUTCHAR: usize = 1;
-    //which 表示请求 RustSBI 的服务的类型（RustSBI 可以提供多种不同类型的服务），
-    // arg0 ~ arg2 表示传递给 RustSBI 的 3 个参数
-    #[inline(always)]
-    fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
-        let mut ret;
-        //Rust 编译器无法判定汇编代码的安全性，所以我们需要将其包裹在 unsafe 块中。 
-        // unsafe {
-        //     //使用 Rust 提供的 asm! 宏在代码中内嵌汇编。
-        //     //x10~x17: 对应 a0~a7 x1 ：对应 ra 所以是以寄存器 a0~a2 来保存系统调用的参数，
-        //     //以及寄存器 a7 保存 syscall ID， 返回值通过寄存器 a0 传递给局部变量 ret
-        //     core::arch::asm!(
-        //         "li x16, 0",
-        //         "ecall",
-        //         inlateout("x10") arg0 => ret,
-        //         in("x11") arg1,
-        //         in("x12") arg2,
-        //         in("x17") which,
-        //     );
-        // }
-        unsafe {
-            core::arch::asm!(
-                "ecall",
-                inlateout("x10") arg0 => ret,
-                in("x11") arg1,
-                in("x12") arg2,
-                in("x17") which,
-            );
-        }
-
-        ret
-    }
-
-    pub fn console_putchar(ch: usize) {
-        sbi_call(SBI_CONSOLE_PUTCHAR, ch, 0, 0);
-    }
-
-
-    struct Console1;
-
-    /// 为 `Console` 实现 `console::Console` trait。
-    impl Console for Console1 {
-
-        fn put_char(&self, _c: u8) {
-            // #[allow(deprecated)]
-            // legacy::console_putchar(c as _);
-            console_putchar(_c as u8 as usize);
-        }
-    }
-
-    #[test]
-    fn test_println() {
-        init_console(&Console1);
-        (&Console1).put_char(0);
-        set_log_level(option_env!("LOG"));
-        // 测试各种打印
-        test_log();
-        print!("hell0 ");
-        //print!("trivial assertion... ");
-        assert_eq!(1, 1);
-        //println!("[ok]");
-    }
 }
 

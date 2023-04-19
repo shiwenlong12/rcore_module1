@@ -24,7 +24,7 @@ const INDIRECT2_BOUND: usize = INDIRECT1_BOUND + INODE_INDIRECT2_COUNT;
 #[repr(C)]
 pub struct SuperBlock {
     //用于文件系统合法性验证的魔数
-    magic: u32,
+    pub magic: u32,
     //文件系统的总块数
     pub total_blocks: u32,
     pub inode_bitmap_blocks: u32,
@@ -91,7 +91,7 @@ pub struct DiskInode {
     pub indirect1: u32,
     pub indirect2: u32,
     //目录还是文件
-    type_: DiskInodeType,
+    pub type_: DiskInodeType,
 }
 
 impl DiskInode {
@@ -459,3 +459,5 @@ impl DirEntry {
         self.inode_number
     }
 }
+
+

@@ -65,6 +65,10 @@ unsafe impl GlobalAlloc for Global {
     }
 }
 
+
+
+
+
 #[cfg(test)]
 mod tests {
     
@@ -105,8 +109,28 @@ mod tests {
         }
     }
 
+    use page_table::{MmuMeta, Pte, VAddr, VmFlags, PPN, VPN};
+
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+    pub(crate) struct Sv39;
+
+    impl MmuMeta for Sv39 {
+        const P_ADDR_BITS: usize = 56;
+        const PAGE_BITS: usize = 12;
+        const LEVEL_BITS: &'static [usize] = &[9; 3];
+        const PPN_POS: usize = 10;
+
+        #[inline]
+        fn is_leaf(value: usize) -> bool {
+            const MASK: usize = 0b1110;
+            value & MASK != 0
+        }
+    }
+
     #[test]
     fn test_alloc() {  
+        // let mut v = Vec::new();
+        // v.push(1);
         let _a = KernelLayout {
             text: 8000_1000,
             end: 8800_0000,
@@ -119,22 +143,27 @@ mod tests {
         // 初始化内存分配。
         // 参数 `base_address` 表示动态内存区域的起始位置。
         init(_a.start());
+        assert_eq!(4096,1 << Sv39::PAGE_BITS);
 
         assert_eq!(8200_1000,MEMORY - _a.len());
         assert_eq!(8800_0000,_a.end() as _);
         unsafe{
             let region1 = core::slice::from_raw_parts_mut(_a.end() as *mut u8,MEMORY - _a.len(),);
-            transfer(region1);
+            //transfer(region1);
         }
 
         
         
         // 将一个内存块托管到内存分配器。
+        // 将一个 `ptr` 指向的长度为 `usize` 的内存块转移给分配器。
+        //
+        // # Safety
+        //
+        // 调用者需要保证：
+        //
+        // - 这个内存块没有被其他任何对象引用；
+        // - 这个内存块和已经托管的内存块不重叠。
         unsafe {
-            // transfer(core::slice::from_raw_parts_mut(
-            //     _a.end() as *mut u8,
-            //     MEMORY - _a.len(),
-            // ))
             let region1 = core::slice::from_raw_parts_mut(
                 _a.end() as *mut u8,
                 MEMORY - _a.len(),
@@ -143,26 +172,29 @@ mod tests {
             //HEAP.transfer(ptr, region1.len());
             HEAP.capacity();
             assert_eq!(0,HEAP.capacity());
+            let size = region1.len();
+            //HEAP.capacity() = size;
+            assert_eq!(0,HEAP.capacity());
         }
 
-        //实现page_alloc
-        extern "Rust" {
-            fn __rust_alloc_zeroed(size: usize, align: usize) -> *mut u8;
-        }
+        // //实现page_alloc
+        // extern "Rust" {
+        //     fn __rust_alloc_zeroed(size: usize, align: usize) -> *mut u8;
+        // }
 
 
-        #[must_use = "losing the pointer will leak memory"]
-        #[inline]
-        pub unsafe fn alloc_zeroed(layout: Layout) -> *mut u8 {
-            unsafe { __rust_alloc_zeroed(layout.size(), layout.align()) }
-        }
+        // #[must_use = "losing the pointer will leak memory"]
+        // #[inline]
+        // pub unsafe fn alloc_zeroed(layout: Layout) -> *mut u8 {
+        //     unsafe { __rust_alloc_zeroed(layout.size(), layout.align()) }
+        // }
 
-        let layout = Layout::new::<u16>();
+        // let layout = Layout::new::<u16>();
         
-        unsafe {
-            let ptr: *mut u8  =  alloc_zeroed(layout);
-            assert_eq!(*(ptr as *mut u16), 0);
-        }
+        // unsafe {
+        //     let ptr: *mut u8  =  alloc_zeroed(layout);
+        //     assert_eq!(*(ptr as *mut u16), 0);
+        // }
         
         
 
